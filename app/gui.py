@@ -78,6 +78,10 @@ class FastMdApp:
                                      command=self._add_files, width=140)
         self.add_btn.pack(side="left", padx=(0, 5))
 
+        self.add_folder_btn = ctk.CTkButton(frame, text=t('add_folder', self.lang),
+                                            command=self._add_folder_dialog, width=140)
+        self.add_folder_btn.pack(side="left", padx=5)
+
         self.output_btn = ctk.CTkButton(frame, text=t('output_folder', self.lang),
                                         command=self._select_output, width=140)
         self.output_btn.pack(side="left", padx=5)
@@ -129,6 +133,13 @@ class FastMdApp:
             command=self._on_mode_change
         )
         self.to_docx_radio.pack(side="left")
+
+        self.auto_radio = ctk.CTkRadioButton(
+            frame, text=t('mode_auto', self.lang),
+            variable=self.mode_var, value='auto',
+            command=self._on_mode_change
+        )
+        self.auto_radio.pack(side="left", padx=(20, 0))
 
     def _build_action_buttons(self):
         frame = ctk.CTkFrame(self.main, fg_color="transparent")
@@ -222,34 +233,22 @@ class FastMdApp:
         mode = self.mode_var.get()
         if mode == 'to_md':
             exts = [('Word/PDF files', '*.docx *.pdf'), ('All files', '*.*')]
-            paths = filedialog.askopenfilenames(
-                title=t('select_files', self.lang),
-                filetypes=exts
-            )
-            for p in paths:
-                self._add_single_file(p)
-            
-            # Also ask if user wants to add a folder
-            folder = filedialog.askdirectory(
-                title=t('select_folder', self.lang) if hasattr(t('select_folder', self.lang), '__len__') else 'Selecciona una carpeta (opcional)'
-            )
-            if folder:
-                self._add_folder(folder)
-        else:
+        elif mode == 'to_docx':
             exts = [('Markdown files', '*.md'), ('All files', '*.*')]
-            paths = filedialog.askopenfilenames(
-                title=t('select_files', self.lang),
-                filetypes=exts
-            )
-            for p in paths:
-                self._add_single_file(p)
-            
-            # Also ask if user wants to add a folder
-            folder = filedialog.askdirectory(
-                title=t('select_folder', self.lang) if hasattr(t('select_folder', self.lang), '__len__') else 'Selecciona una carpeta (opcional)'
-            )
-            if folder:
-                self._add_folder(folder)
+        else:
+            exts = [('Markdown/Word/PDF files', '*.md *.docx *.pdf'), ('All files', '*.*')]
+
+        paths = filedialog.askopenfilenames(
+            title=t('select_files', self.lang),
+            filetypes=exts
+        )
+        for p in paths:
+            self._add_single_file(p)
+
+    def _add_folder_dialog(self):
+        folder = filedialog.askdirectory(title=t('select_folder', self.lang))
+        if folder:
+            self._add_folder(folder)
 
     def _add_single_file(self, file_path):
         if file_path in self.files:
@@ -257,7 +256,8 @@ class FastMdApp:
         ext = Path(file_path).suffix.lower()
         mode = self.mode_var.get()
         valid = (mode == 'to_md' and ext in ('.docx', '.pdf')) or \
-                (mode == 'to_docx' and ext == '.md')
+                (mode == 'to_docx' and ext == '.md') or \
+                (mode == 'auto' and ext in ('.md', '.docx', '.pdf'))
         if not valid:
             return
         self.files.append(file_path)
@@ -273,9 +273,12 @@ class FastMdApp:
         if mode == 'to_md':
             file_exts = ('.docx', '.pdf')
             error_msg = 'No se encontraron archivos Word (.docx) o PDF en:'
-        else:  # to_docx
+        elif mode == 'to_docx':
             file_exts = ('.md',)
             error_msg = 'No se encontraron archivos Markdown (.md) en:'
+        else:
+            file_exts = ('.md', '.docx', '.pdf')
+            error_msg = 'No se encontraron archivos Markdown (.md), Word (.docx) o PDF en:'
         
         for root, dirs, files in os.walk(folder_path):
             for f in files:
@@ -492,11 +495,13 @@ class FastMdApp:
     def _switch_language(self, value):
         self.lang = 'es' if 'ES' in value else 'en'
         self.add_btn.configure(text=t('add_files', self.lang))
+        self.add_folder_btn.configure(text=t('add_folder', self.lang))
         self.output_btn.configure(text=t('output_folder', self.lang))
         self.ai_btn.configure(text=t('ai_prompt', self.lang))
         self.help_btn.configure(text=t('help', self.lang))
         self.to_md_radio.configure(text=t('mode_to_md', self.lang))
         self.to_docx_radio.configure(text=t('mode_to_docx', self.lang))
+        self.auto_radio.configure(text=t('mode_auto', self.lang))
         self.convert_btn.configure(text=t('convert_all', self.lang))
         self.clear_btn.configure(text=t('clear_list', self.lang))
         self.apa_title.configure(text=t('apa_settings', self.lang))
@@ -520,12 +525,13 @@ class FastMdApp:
 
         self.convert_btn.configure(state='disabled', text='⏳ ...')
         self.add_btn.configure(state='disabled')
+        self.add_folder_btn.configure(state='disabled')
         self.clear_btn.configure(state='disabled')
         self.progress_bar.set(0)
         self.status_label.configure(text=t('progress_title', self.lang))
 
         for fp in self.files:
-            self._update_file_status_in_list(fp, 'pending')
+            self._update_file_status_in_list(fp, 'processing')
 
         def on_file_status(file_path, status, message, current, total):
             self.root.after(0, lambda: self._on_file_status(
@@ -536,7 +542,11 @@ class FastMdApp:
 
         self.worker.start_conversion(
             list(self.files), mode, self.output_dir,
-            on_file_status, on_done
+            on_file_status, on_done,
+            {
+                'include_cover': self.cover_var.get(),
+                'include_page_numbers': self.pages_var.get(),
+            }
         )
 
     def _on_file_status(self, file_path, status, current, total):
@@ -550,8 +560,12 @@ class FastMdApp:
     def _on_done(self, completed, errors, total):
         self.convert_btn.configure(state='normal', text=t('convert_all', self.lang))
         self.add_btn.configure(state='normal')
+        self.add_folder_btn.configure(state='normal')
         self.clear_btn.configure(state='normal')
         self.progress_bar.set(1)
+        final_status = 'error' if errors else 'done'
+        for fp in self.files:
+            self._update_file_status_in_list(fp, final_status)
         msg = f"✅ {t('conversion_done', self.lang)}: {completed} {t('files_saved', self.lang)} {self.output_dir}"
         if errors:
             msg += f" ({errors} {t('status_error', self.lang)})"

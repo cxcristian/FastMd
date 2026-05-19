@@ -23,7 +23,7 @@ class MdToDocxConverter:
         self.image_dir = None
         self.image_counter = 0
 
-    def convert(self, output_path):
+    def convert(self, output_path, include_cover=True, include_page_numbers=True):
         with open(self.md_path, 'r', encoding='utf-8') as f:
             text = f.read()
 
@@ -42,8 +42,10 @@ class MdToDocxConverter:
         self.metadata = metadata
         content_blocks = [b for b in blocks if b[0] != 'front_matter']
 
-        add_apa7_cover(self.doc, metadata)
-        add_page_numbers(self.doc)
+        if include_cover:
+            add_apa7_cover(self.doc, metadata)
+        if include_page_numbers:
+            add_page_numbers(self.doc)
 
         for block in content_blocks:
             self._render_block(block)
@@ -414,6 +416,6 @@ class MdToDocxConverter:
         self.doc.add_page_break()
 
 
-def convert(md_path, output_path):
+def convert(md_path, output_path, include_cover=True, include_page_numbers=True):
     converter = MdToDocxConverter(md_path)
-    return converter.convert(output_path)
+    return converter.convert(output_path, include_cover, include_page_numbers)

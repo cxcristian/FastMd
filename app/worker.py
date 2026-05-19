@@ -21,18 +21,21 @@ class ConversionWorker:
         self.progress_queue = queue.Queue()
         self._running = False
 
-    def start_conversion(self, files, mode, output_dir, file_status_callback, done_callback):
+    def start_conversion(self, files, mode, output_dir, file_status_callback, done_callback,
+                         apa_options=None):
         self._running = True
+        apa_options = apa_options or {}
         
         # Expand folders to individual files
         expanded_files = []
         folder_mapping = {}  # Maps file path to original folder path
         
-        # Define supported extensions based on mode
         if mode == 'to_md':
             supported_exts = SUPPORTED_TO_MD
-        else:  # to_docx
+        elif mode == 'to_docx':
             supported_exts = SUPPORTED_TO_DOCX
+        else:
+            supported_exts = SUPPORTED_FORMATS
         
         for item in files:
             if os.path.isdir(item):
@@ -58,7 +61,8 @@ class ConversionWorker:
             for file_path in expanded_files:
                 folder_source = folder_mapping.get(file_path)
                 future = self.executor.submit(
-                    self._convert_single, file_path, mode, output_dir, folder_source
+                    self._convert_single, file_path, mode, output_dir, folder_source,
+                    apa_options
                 )
                 self.futures[future] = file_path
 
@@ -67,7 +71,8 @@ class ConversionWorker:
             for future in as_completed(self.futures):
                 file_path = self.futures[future]
                 try:
-                    success, message = future.result()
+                    result = future.result()
+                    success, message = result[:2]
                     if success:
                         completed += 1
                     else:
@@ -89,9 +94,18 @@ class ConversionWorker:
         thread.start()
         return thread
 
-    def _convert_single(self, file_path, mode, output_dir, folder_source=None):
+    def _convert_single(self, file_path, mode, output_dir, folder_source=None,
+                        apa_options=None):
+        apa_options = apa_options or {}
         ext = Path(file_path).suffix.lower()
         base_name = Path(file_path).stem
+        if mode == 'auto':
+            if ext in SUPPORTED_TO_MD:
+                mode = 'to_md'
+            elif ext in SUPPORTED_TO_DOCX:
+                mode = 'to_docx'
+            else:
+                return False, f'Formato no soportado: {ext}'
 
         if mode == 'to_md':
             # Calculate relative path if file came from a folder
@@ -143,7 +157,12 @@ class ConversionWorker:
                     os.makedirs(output_folder, exist_ok=True)
                     docx_path = os.path.join(output_folder, f'{base_name}.docx')
                 
-                return md_to_docx(file_path, docx_path)
+                return md_to_docx(
+                    file_path,
+                    docx_path,
+                    include_cover=apa_options.get('include_cover', True),
+                    include_page_numbers=apa_options.get('include_page_numbers', True),
+                )
             else:
                 return False, f'Formato no soportado: {ext}'
 
