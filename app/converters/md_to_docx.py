@@ -4,6 +4,7 @@ import yaml
 from docx import Document
 from docx.shared import Pt, Inches, Cm
 from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.enum.table import WD_CELL_VERTICAL_ALIGNMENT
 from docx.oxml.ns import qn
 from docx.oxml import OxmlElement
 
@@ -367,27 +368,62 @@ class MdToDocxConverter:
             if j < num_cols:
                 cell = table.rows[0].cells[j]
                 cell.text = header
-                for paragraph in cell.paragraphs:
-                    for run in paragraph.runs:
-                        run.bold = True
-                        run.font.name = 'Times New Roman'
-                        run.font.size = Pt(12)
+                self._format_table_cell(cell, bold=True, alignment=WD_ALIGN_PARAGRAPH.CENTER)
 
         for i, row in enumerate(rows):
             for j, cell_text in enumerate(row):
                 if j < num_cols:
                     cell = table.rows[i + 1].cells[j]
                     cell.text = cell_text
-                    for paragraph in cell.paragraphs:
-                        for run in paragraph.runs:
-                            run.font.name = 'Times New Roman'
-                            run.font.size = Pt(12)
+                    self._format_table_cell(cell)
 
         p = self.doc.add_paragraph()
         pf = p.paragraph_format
         pf.space_before = Pt(0)
         pf.space_after = Pt(0)
         pf.line_spacing = 2.0
+
+    def _format_table_cell(self, cell, bold=False, alignment=WD_ALIGN_PARAGRAPH.LEFT):
+        cell.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.TOP
+        self._set_cell_margins(cell, top=80, start=80, bottom=80, end=80)
+        for paragraph in cell.paragraphs:
+            paragraph.alignment = alignment
+            pf = paragraph.paragraph_format
+            pf.space_before = Pt(0)
+            pf.space_after = Pt(0)
+            pf.line_spacing = 1.0
+            pf.first_line_indent = Inches(0)
+            for run in paragraph.runs:
+                run.bold = bold
+                run.font.name = 'Times New Roman'
+                run.font.size = Pt(12)
+                rPr = run._element.get_or_add_rPr()
+                rFonts = rPr.find(qn('w:rFonts'))
+                if rFonts is None:
+                    rFonts = OxmlElement('w:rFonts')
+                    rPr.insert(0, rFonts)
+                rFonts.set(qn('w:eastAsia'), 'Times New Roman')
+
+    def _set_cell_margins(self, cell, top=80, start=80, bottom=80, end=80):
+        tc = cell._tc
+        tcPr = tc.get_or_add_tcPr()
+        tcMar = tcPr.first_child_found_in('w:tcMar')
+        if tcMar is None:
+            tcMar = OxmlElement('w:tcMar')
+            tcPr.append(tcMar)
+
+        for margin_name, margin_value in {
+            'top': top,
+            'start': start,
+            'bottom': bottom,
+            'end': end,
+        }.items():
+            node = tcMar.find(qn(f'w:{margin_name}'))
+            if node is None:
+                node = OxmlElement(f'w:{margin_name}')
+                tcMar.append(node)
+            node.set(qn('w:w'), str(margin_value))
+            node.set(qn('w:type'), 'dxa')
 
     def _render_code(self, code_data):
         lang, code_text = code_data
