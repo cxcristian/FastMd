@@ -9,16 +9,19 @@ Convierte fácilmente entre Word, PDF y Markdown manteniendo la estructura de ca
 ## ✨ Características
 
 ### 📄 Conversión Bidireccional
+
 - **Word/PDF → Markdown**: Convierte `.docx` y `.pdf` a `.md` con extracción de imágenes
 - **Markdown → Word (APA 7)**: Convierte `.md` a `.docx` con formato completo APA 7ª edición
 
 ### 📁 Soporte de Carpetas
+
 - Procesa **carpetas completas** manteniendo la estructura de directorios
 - Busca recursivamente archivos en subcarpetas
 - Crea automáticamente la estructura en la carpeta de salida
 - Funciona en **ambas direcciones** de conversión
 
 ### 🎯 Formato APA 7 Automático
+
 - ✅ Portada completa (título, autor, institución, curso, profesor, fecha)
 - ✅ Times New Roman 12pt
 - ✅ Interlineado doble
@@ -29,10 +32,12 @@ Convierte fácilmente entre Word, PDF y Markdown manteniendo la estructura de ca
 - ✅ Números de página automáticos
 
 ### ⚡ Procesamiento Rápido
+
 - Procesamiento en paralelo (múltiples archivos simultáneamente)
 - Interfaz gráfica intuitiva con barra de progreso
 
 ### 🤖 Integración con IA
+
 - Generador de prompts para ChatGPT, Claude y Gemini
 - Instrucciones detalladas para que la IA estructure documentos perfectos
 
@@ -44,6 +49,7 @@ Convierte fácilmente entre Word, PDF y Markdown manteniendo la estructura de ca
 - Sistema operativo: Windows, macOS o Linux
 
 ### Dependencias
+
 ```
 python-docx
 pdf2image
@@ -57,12 +63,14 @@ tkinterdnd2
 ## 📦 Instalación
 
 ### 1. Clonar el repositorio
+
 ```bash
 git clone https://github.com/cxcristian/FastMd.git
 cd fastMd
 ```
 
 ### 2. Crear entorno virtual (opcional pero recomendado)
+
 ```bash
 # En Windows
 python -m venv venv
@@ -74,16 +82,19 @@ source venv/bin/activate
 ```
 
 ### 3. Instalar dependencias
+
 ```bash
 pip install -r requirements.txt
 ```
 
 ### 4. Ejecutar la aplicación
+
 ```bash
 python main.py
 ```
 
 O en Windows, simplemente ejecuta:
+
 ```bash
 run_fastMd.bat
 ```
@@ -93,6 +104,7 @@ run_fastMd.bat
 ## 🎯 Cómo Usar
 
 ### Opción 1: Interfaz Gráfica (Recomendado)
+
 1. **Agregar archivos/carpetas**
    - Haz clic en "➕ Agregar archivos" y selecciona archivos o carpetas
    - O arrastra archivos/carpetas directamente a la ventana
@@ -113,6 +125,7 @@ run_fastMd.bat
    - Verás una barra de progreso con el estado de cada conversión
 
 ### Opción 2: Línea de Comandos
+
 ```bash
 # Conversión individual de archivo
 python -m app.converters.docx_to_md input.docx output.md ./images
@@ -153,6 +166,7 @@ fastMd/
 ### Ejemplo 1: Convertir una carpeta de Word a Markdown
 
 **Estructura inicial:**
+
 ```
 MisDocumentos/
 ├── capitulo1.docx
@@ -162,6 +176,7 @@ MisDocumentos/
 ```
 
 **Después de convertir:**
+
 ```
 output/
 └── MisDocumentos/
@@ -177,6 +192,7 @@ output/
 ### Ejemplo 2: Convertir Markdown a Word con APA 7
 
 **Estructura inicial:**
+
 ```
 TrabajosFinales/
 ├── introduccion.md
@@ -185,6 +201,7 @@ TrabajosFinales/
 ```
 
 **Después de convertir:**
+
 ```
 output/
 └── TrabajosFinales/
@@ -206,6 +223,7 @@ fastMd incluye un generador de prompts para ChatGPT, Claude y Gemini:
 5. Convierte el resultado con fastMd a Word (APA 7) automáticamente
 
 **Ventajas:**
+
 - Documentos perfectamente formateados
 - Evita reformateo manual
 - Compatibilidad garantizada con APA 7
@@ -224,6 +242,7 @@ Cambia el idioma desde el botón de selector en la interfaz.
 ## 🔧 Configuración Avanzada
 
 ### Variables de Entorno
+
 ```bash
 # Carpeta de salida personalizada
 set OUTPUT_DIR=C:\MisCarpeta\Salida
@@ -233,7 +252,9 @@ set APP_LANG=es
 ```
 
 ### Opciones APA 7 Personalizadas
+
 Edita `app/apa7.py` para:
+
 - Cambiar la fuente
 - Ajustar márgenes
 - Modificar espaciado
@@ -244,15 +265,17 @@ Edita `app/apa7.py` para:
 ## 📊 Formatos Soportados
 
 ### Entrada
-| Formato | Conversión |
-|---------|-----------|
+
+| Formato | Conversión      |
+| ------- | --------------- |
 | `.docx` | Word → Markdown |
-| `.pdf`  | PDF → Markdown |
+| `.pdf`  | PDF → Markdown  |
 | `.md`   | Markdown → Word |
 
 ### Salida
+
 | Formato | Conversión |
-|---------|-----------|
+| ------- | ---------- |
 | `.md`   | ← Word/PDF |
 | `.docx` | ← Markdown |
 
@@ -261,17 +284,21 @@ Edita `app/apa7.py` para:
 ## 🐛 Solución de Problemas
 
 ### Error: "No module named 'customtkinter'"
+
 ```bash
 pip install customtkinter
 ```
 
 ### Error: "No module named 'docx'"
+
 ```bash
 pip install python-docx
 ```
 
 ### Las imágenes no se extraen del PDF
+
 Asegúrate de tener Ghostscript instalado:
+
 ```bash
 # Windows
 choco install ghostscript
@@ -284,8 +311,10 @@ sudo apt-get install ghostscript
 ```
 
 ### La interfaz gráfica no aparece
+
 - Asegúrate de estar ejecutando con Python 3.8 o superior
 - En Linux, puede que necesites instalar dependencias adicionales de Tk:
+
 ```bash
 sudo apt-get install python3-tk
 ```
@@ -306,6 +335,7 @@ La conversión de Markdown a Word sigue las directrices completas de APA 7ª edi
 - Números de página en esquina superior derecha
 
 **Limitaciones:**
+
 - Las referencias bibliográficas deben estar manualmente formateadas en APA 7
 - Las tablas se convierten básicamente (se recomienda ajustar manualmente)
 - Los elementos complejos de Word pueden necesitar ajustes
