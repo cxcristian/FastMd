@@ -215,29 +215,41 @@ class FastMdApp:
         for fp in paths:
             fp = fp.strip('{}\'" ')
             if os.path.isfile(fp):
-                self._add_single_file(fp)            elif os.path.isdir(fp):
+                self._add_single_file(fp)
+            elif os.path.isdir(fp):
                 self._add_folder(fp)
     def _add_files(self):
         mode = self.mode_var.get()
         if mode == 'to_md':
-            # Allow both files and folders
-            folder = filedialog.askdirectory(
-                title=t('select_folder', self.lang) if hasattr(t('select_folder', self.lang), '__len__') else 'Selecciona una carpeta'
-            )
-            if folder:
-                self._add_folder(folder)
-            # Also allow individual files
             exts = [('Word/PDF files', '*.docx *.pdf'), ('All files', '*.*')]
-        else:
-            exts = [('Markdown files', '*.md'), ('All files', '*.*')]
-        
-        if mode == 'to_docx':
             paths = filedialog.askopenfilenames(
                 title=t('select_files', self.lang),
                 filetypes=exts
             )
             for p in paths:
                 self._add_single_file(p)
+            
+            # Also ask if user wants to add a folder
+            folder = filedialog.askdirectory(
+                title=t('select_folder', self.lang) if hasattr(t('select_folder', self.lang), '__len__') else 'Selecciona una carpeta (opcional)'
+            )
+            if folder:
+                self._add_folder(folder)
+        else:
+            exts = [('Markdown files', '*.md'), ('All files', '*.*')]
+            paths = filedialog.askopenfilenames(
+                title=t('select_files', self.lang),
+                filetypes=exts
+            )
+            for p in paths:
+                self._add_single_file(p)
+            
+            # Also ask if user wants to add a folder
+            folder = filedialog.askdirectory(
+                title=t('select_folder', self.lang) if hasattr(t('select_folder', self.lang), '__len__') else 'Selecciona una carpeta (opcional)'
+            )
+            if folder:
+                self._add_folder(folder)
 
     def _add_single_file(self, file_path):
         if file_path in self.files:
@@ -255,23 +267,31 @@ class FastMdApp:
         if folder_path in self.files:
             return
         mode = self.mode_var.get()
-        if mode != 'to_md':
-            return
+        
         # Verify folder exists and contains supported files
         has_files = False
+        if mode == 'to_md':
+            file_exts = ('.docx', '.pdf')
+            error_msg = 'No se encontraron archivos Word (.docx) o PDF en:'
+        else:  # to_docx
+            file_exts = ('.md',)
+            error_msg = 'No se encontraron archivos Markdown (.md) en:'
+        
         for root, dirs, files in os.walk(folder_path):
             for f in files:
-                if f.lower().endswith(('.docx', '.pdf')):
+                if f.lower().endswith(file_exts):
                     has_files = True
                     break
             if has_files:
                 break
+        
         if not has_files:
             messagebox.showwarning(
                 'Sin archivos',
-                f'No se encontraron archivos Word (.docx) o PDF en: {folder_path}'
+                f'{error_msg} {folder_path}'
             )
             return
+        
         self.files.append(folder_path)
         self._refresh_file_list()
 

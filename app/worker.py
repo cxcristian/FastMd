@@ -11,6 +11,7 @@ from app.converters.md_to_docx import convert as md_to_docx
 
 SUPPORTED_TO_MD = ('.docx', '.pdf')
 SUPPORTED_TO_DOCX = ('.md',)
+SUPPORTED_FORMATS = SUPPORTED_TO_MD + SUPPORTED_TO_DOCX
 
 
 class ConversionWorker:
@@ -27,12 +28,18 @@ class ConversionWorker:
         expanded_files = []
         folder_mapping = {}  # Maps file path to original folder path
         
+        # Define supported extensions based on mode
+        if mode == 'to_md':
+            supported_exts = SUPPORTED_TO_MD
+        else:  # to_docx
+            supported_exts = SUPPORTED_TO_DOCX
+        
         for item in files:
             if os.path.isdir(item):
                 # Find all supported files in folder
                 for root, dirs, filenames in os.walk(item):
                     for filename in filenames:
-                        if filename.lower().endswith(SUPPORTED_TO_MD):
+                        if filename.lower().endswith(supported_exts):
                             file_path = os.path.join(root, filename)
                             expanded_files.append(file_path)
                             folder_mapping[file_path] = item
@@ -117,7 +124,25 @@ class ConversionWorker:
 
         elif mode == 'to_docx':
             if ext == '.md':
-                docx_path = os.path.join(output_dir, f'{base_name}.docx')
+                # Calculate relative path if file came from a folder
+                if folder_source:
+                    rel_path = os.path.relpath(file_path, folder_source)
+                    rel_dir = os.path.dirname(rel_path)
+                    
+                    # Create output folder structure
+                    if rel_dir:
+                        output_folder = os.path.join(output_dir, os.path.splitext(os.path.basename(folder_source))[0], rel_dir)
+                    else:
+                        output_folder = os.path.join(output_dir, os.path.splitext(os.path.basename(folder_source))[0])
+                    
+                    os.makedirs(output_folder, exist_ok=True)
+                    docx_path = os.path.join(output_folder, f'{base_name}.docx')
+                else:
+                    # Original behavior for individual files
+                    output_folder = output_dir
+                    os.makedirs(output_folder, exist_ok=True)
+                    docx_path = os.path.join(output_folder, f'{base_name}.docx')
+                
                 return md_to_docx(file_path, docx_path)
             else:
                 return False, f'Formato no soportado: {ext}'
